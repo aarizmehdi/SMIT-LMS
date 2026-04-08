@@ -1,0 +1,142 @@
+/* 
+    SMIT Student Portal - Production Design System
+    Theme: Cyber-Tech Academy / Heritage Blueprint
+    ---------------------------------------------
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+    --heritage-navy: #00030A;
+    --navy-abyss: #000105;
+    --luminous-green: #90BC4E;
+    --smit-blue: #0A21C0;
+    
+    /* Gradients */
+    --brand-gradient: linear-gradient(135deg, #0A21C0 0%, #10B981 100%);
+    --aura-gradient: radial-gradient(circle at 10% 10%, rgba(10,33,192,0.1) 0%, transparent 50%),
+                     radial-gradient(circle at 90% 90%, rgba(144,188,78,0.08) 0%, transparent 50%);
+    
+    /* Glass */
+    --glass-surface: rgba(255, 255, 255, 0.02);
+    --glass-border: rgba(255, 255, 255, 0.07);
+    --glass-blur: blur(48px);
+    
+    /* Text */
+    --text-primary: #0F172A;
+    --text-muted: #64748B;
+    --text-white: #FFFFFF;
+    
+    /* Radius & Shadow */
+    --radius-xl: 20px;
+    --radius-lg: 16px;
+    --shadow-premium: 0 40px 100px rgba(0, 0, 0, 0.3);
+    --transition: all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; outline:none; }
+body { font-family: 'Plus Jakarta Sans', sans-serif; height: 100vh; overflow: hidden; background: var(--navy-abyss); color: var(--text-white); }
+
+/* --- LOGIN VIEW --- */
+.login-view {
+    display: flex; height: 100vh; width: 100vw;
+    background: var(--navy-abyss); overflow: hidden;
+    position: relative;
+}
+
+/* Luxury Aura (No Grid) */
+.login-aura-hero {
+    width: 50%;
+    background: var(--navy-abyss);
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center; /* CENTERED CONTENT */
+    padding: 0; position: relative; overflow: hidden;
+    height: 100vh;
+}
+
+/* HIGH-LUMINOSITY DUAL-AURA */
+.seductive-orb {
+    position: absolute; width: 1400px; height: 1400px;
+    background: radial-gradient(circle, rgba(10,33,192,0.25) 0%, rgba(144,188,78,0.15) 40%, transparent 75%);
+    border-radius: 50%; filter: blur(180px);
+    pointer-events: none; z-index: 1; transform: translate(-50%, -50%);
+    will-change: transform;
+}
+
+.login-hero-content { position: relative; z-index: 10; max-width: 440px; display: flex; flex-direction: column; gap: 20px; }
+
+/* FLOATING TECH ASSETS */
+.floating-tech-asset {
+    position: absolute; pointer-events: none; z-index: 5;
+    opacity: 0.4; filter: drop-shadow(0 0 20px rgba(144,188,78,0.3));
+}
+.floating-globe {
+    position: absolute; bottom: 5%; right: 10%; width: 320px; height: 320px;
+    opacity: 0.6; pointer-events: none; z-index: 2;
+}
+
+/* COMPACT METRICS GRID */
+.login-stat-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+}
+.stat-card-gsap {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 18px; padding: 16px 20px;
+    backdrop-filter: blur(40px);
+    display: flex; flex-direction: column; gap: 4px;
+    overflow: visible; /* FIXED: Glow bloom no longer cut */
+    position: relative;
+}
+.stat-card-gsap::before {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(400px circle at var(--x) var(--y), rgba(144,188,78,0.2), transparent 45%); 
+    opacity: 0; transition: opacity 0.6s ease; z-index: 0;
+}
+.stat-card-gsap:hover::before { opacity: 1; }
+.stat-card-gsap:hover { border-color: rgba(144, 188, 78, 0.2); }
+
+.mono-label {
+    display: none; /* Removed kiddy techy labels */
+}
+
+/* LOGIN FORM AREA */
+.login-form-side {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    background: #FFFFFF; position: relative; z-index: 10;
+    margin: 0; padding: 0;
+}
+
+.form-input {
+    width: 100%; border: 1.5px solid #E2E8F0; padding: 0 20px;
+    transition: var(--transition); background: #F8FAFC;
+    font-family: 'Inter'; font-weight: 500; font-size: 16px;
+}
+.form-input:focus {
+    border-color: var(--smit-blue); background: #FFF;
+    box-shadow: 0 0 0 4px rgba(10,33,192,0.05); transform: translateY(-1px);
+}
+
+.btn-primary {
+    background: var(--brand-gradient);
+    color: white; border: none; cursor: pointer; transition: var(--transition);
+    box-shadow: 0 10px 30px rgba(10,33,192,0.1);
+    display: flex; align-items: center; justify-content: center;
+}
+.btn-primary:hover { transform: translateY(-3px); filter: brightness(1.1); box-shadow: 0 15px 40px rgba(10,33,192,0.2); }
+.btn-primary:active { transform: scale(0.98); }
+
+/* --- LOADING --- */
+.loading-overlay {
+    position: fixed; inset: 0; background: var(--navy-abyss);
+    z-index: 10000; display: none; align-items: center; justify-content: center;
+    flex-direction: column; gap: 24px;
+}
+.spinner { width: 44px; height: 44px; border: 4px solid rgba(144,188,78,0.1); border-top-color: var(--luminous-green); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* --- SHELL (EXISTING STYLES) --- */
+.portal-shell { display: none; height: 100vh; grid-template-columns: 280px 1fr; overflow: hidden; background: #F8FAFC; }
+.sidebar { background: #FFFFFF; border-right: 1px solid #E2E8F0; padding: 32px 0; }
+.nav-item { margin: 4px 16px; padding: 14px 20px; border-radius: 12px; color: #64748B; cursor: pointer; display: flex; align-items: center; gap: 14px; font-weight: 600; transition: 0.2s; }
+.nav-item.active { background: var(--brand-gradient); color: white; box-shadow: 0 8px 16px rgba(10,33,192,0.15); }

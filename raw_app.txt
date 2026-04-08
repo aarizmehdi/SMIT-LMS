@@ -1,0 +1,1200 @@
+﻿import React, { useLayoutEffect, useRef, useState } from 'react';
+import gsap from 'gsap';
+
+function App() {
+   const [activeTab, setActiveTab] = useState<'student' | 'teacher'>('student');
+   const [showPassword, setShowPassword] = useState(false);
+   const [isLoggedIn, setIsLoggedIn] = useState(false);
+   const [currentView, setCurrentView] = useState('Dashboard');
+   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); const [showCopyToast, setShowCopyToast] = useState(false);
+   const [dashTab, setDashTab] = useState('Quizzes');
+   const heroRef = useRef<HTMLDivElement>(null);
+   const orbRef = useRef<HTMLDivElement>(null);
+   const globeRef = useRef<SVGSVGElement>(null);
+
+   // --- KEYBOARD SHORTCUTS (MAGNUM OPUS CONTROL) ---
+   useLayoutEffect(() => {
+      const handleKeyDown = (e: KeyboardEvent) => {
+         if (e.ctrlKey && e.key === '.') {
+            e.preventDefault();
+            setIsSidebarCollapsed(prev => !prev);
+         }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+   }, []);
+
+   // --- 1. ONE-TIME CINEMATIC ENTRANCE ---
+   useLayoutEffect(() => {
+      const ctx = gsap.context(() => {
+         const entranceTl = gsap.timeline({
+            defaults: { ease: 'back.out(1.4)', duration: 1.4 }
+         });
+
+         entranceTl.fromTo(".gsap-hero-element",
+            { y: 30, opacity: 0 },
+            { y: 0, opacity: 1, stagger: 0.2, duration: 1 }
+         );
+
+         entranceTl.fromTo(".floating-globe",
+            { y: 150, opacity: 0 },
+            { y: 0, opacity: 1, duration: 2.5, ease: 'expo.out' },
+            "-=1.2"
+         );
+
+         entranceTl.fromTo(".slide-from-left",
+            { x: -300, rotation: -120, opacity: 0 },
+            { x: 0, rotation: 0, opacity: 0.5, duration: 2.8, ease: 'expo.out' },
+            "-=2"
+         );
+
+         entranceTl.fromTo(".cross-screen-floater-right",
+            { x: -150, y: 0, rotation: 90, opacity: 1 },
+            { x: 3000, y: 0, rotation: 180, opacity: 0, duration: 2.5, ease: 'power2.in' },
+            "0"
+         );
+
+         entranceTl.fromTo(".cross-screen-floater-left",
+            { x: -1200, rotation: -180, opacity: 0 },
+            { x: 0, rotation: -15, opacity: 0.5, duration: 3.5, ease: 'expo.out' },
+            "1.0"
+         );
+
+         entranceTl.fromTo(".fade-in-floater",
+            { opacity: 0 },
+            { opacity: 0.5, duration: 3, ease: 'power2.inOut', stagger: 0.3 },
+            "-=2"
+         );
+
+         entranceTl.fromTo(".gsap-smit-brand",
+            { x: 600, rotation: 30, opacity: 0 },
+            { x: 0, rotation: -8, opacity: 0.3, duration: 2.5, ease: 'expo.out' },
+            "0.6"
+         );
+
+         if (globeRef.current) {
+            gsap.to(globeRef.current, { rotation: 360, duration: 40, repeat: -1, ease: 'none' });
+            gsap.to(globeRef.current, { y: '+=30', duration: 4, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+         }
+
+         // Initial Counters (triggered once)
+         const counters = heroRef.current?.querySelectorAll('.gs-counter');
+         counters?.forEach(el => {
+            const target = parseInt(el.getAttribute('data-target') || "0");
+            const finalVal = target >= 1000 ? target / 1000 : target;
+            const displaySuffix = target >= 1000 ? 'K+' : (el.getAttribute('data-suffix') || '+');
+
+            gsap.to({}, {
+               duration: 3.5,
+               ease: "power2.out",
+               onUpdate: function () {
+                  const current = Math.floor(this.progress() * finalVal);
+                  (el as HTMLElement).innerText = current + displaySuffix;
+               }
+            });
+         });
+      });
+      return () => ctx.revert();
+   }, [activeTab]);
+
+   // --- 2. INTERACTIVE ECOSYSTEM & KINETIC TOGGLE ---
+   useLayoutEffect(() => {
+      const ctx = gsap.context(() => {
+         // Magnetic Stat Cards - Re-implemented strictly for these 4 divs as requested
+         const cards = document.querySelectorAll('.magnetic-stat-card');
+         cards.forEach(card => {
+            const cardEl = card as HTMLElement;
+            const moveHandler = (e: MouseEvent) => {
+               const r = cardEl.getBoundingClientRect();
+               const x = (e.clientX - r.left - r.width / 2) * 0.15;
+               const y = (e.clientY - r.top - r.height / 2) * 0.15;
+               gsap.to(cardEl, { x, y, duration: 0.6, ease: 'power2.out' });
+            };
+            const resetHandler = () => gsap.to(cardEl, { x: 0, y: 0, duration: 1, ease: 'elastic.out(1, 0.3)' });
+
+            cardEl.addEventListener('mousemove', moveHandler);
+            cardEl.addEventListener('mouseleave', resetHandler);
+         });
+         // Holographic Pulsar Kinetic Float
+         gsap.to(".pulsar-node", {
+            y: "-=6",
+            x: "+=2",
+            duration: 2.5,
+            repeat: -1,
+            yoyo: true,
+            ease: "sine.inOut"
+         });
+         gsap.to(".pulsar-node", {
+            rotation: 360,
+            duration: 8,
+            repeat: -1,
+            ease: "none"
+         });
+      });
+      return () => ctx.revert();
+   }, [activeTab]);
+
+   const handleLogin = (e: React.FormEvent) => {
+      e.preventDefault();
+      const loading = document.getElementById('loading-overlay');
+      if (loading) {
+         loading.style.display = 'flex';
+         gsap.fromTo(loading, { opacity: 0 }, { opacity: 1, duration: 0.5 });
+         setTimeout(() => {
+            setIsLoggedIn(true);
+            loading.style.opacity = '0';
+            setTimeout(() => {
+               if (loading) loading.style.display = 'none';
+            }, 500);
+         }, 1000);
+      } else {
+         setIsLoggedIn(true);
+      }
+   };
+
+   const handleLogout = () => {
+      const loading = document.getElementById('loading-overlay');
+      if (loading) {
+         loading.style.display = 'flex';
+         gsap.fromTo(loading, { opacity: 0 }, { opacity: 1, duration: 0.5 });
+         setTimeout(() => {
+            setIsLoggedIn(false);
+            setCurrentView('Dashboard');
+            loading.style.opacity = '0';
+            setTimeout(() => {
+               if (loading) loading.style.display = 'none';
+            }, 500);
+         }, 800);
+      } else {
+         setIsLoggedIn(false);
+         setCurrentView('Dashboard');
+      }
+   };
+
+   const copyToClipboard = (text: string) => {
+      navigator.clipboard.writeText(text).then(() => {
+         setShowCopyToast(true); setTimeout(() => setShowCopyToast(false), 2000);
+      });
+   };
+
+   const [showFeedback, setShowFeedback] = useState(false);
+   const [feedbackType, setFeedbackType] = useState<'Bug' | 'Idea' | 'Other'>('Idea');
+   const [showNotifs, setShowNotifs] = useState(false);
+   const [feedbackStatus, setFeedbackStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
+
+   const notifications: any[] = [];
+   const pendingAssignments: any[] = [];
+   const pendingQuizzes: any[] = [];
+
+   const handleFeedbackSubmit = () => {
+      setFeedbackStatus('sending');
+      setTimeout(() => {
+         setFeedbackStatus('sent');
+         setTimeout(() => {
+            setShowFeedback(false);
+            setFeedbackStatus('idle');
+         }, 1500);
+      }, 1000);
+   };
+
+   useLayoutEffect(() => {
+      if (isLoggedIn) {
+         const ctx = gsap.context(() => {
+            // "Pages don't appear ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â they arrive."
+            gsap.fromTo(".arrive-fade",
+               { y: 20, opacity: 0 },
+               { y: 0, opacity: 1, duration: 1.2, stagger: 0.1, ease: 'power4.out' }
+            );
+            gsap.fromTo(".arrive-sidebar",
+               { x: -30, opacity: 0 },
+               { x: 0, opacity: 1, duration: 1.2, ease: 'power4.out' }
+            );
+
+            // Numbers count up
+            const counters = document.querySelectorAll('.count-up');
+            counters.forEach(el => {
+               const targetStr = el.getAttribute('data-val');
+               if (!targetStr) return;
+               const target = parseFloat(targetStr);
+               const isPerc = el.getAttribute('data-perc');
+               const isFormat = el.getAttribute('data-format');
+
+               gsap.to(el, {
+                  innerHTML: target,
+                  duration: 2.2,
+                  ease: 'power3.out',
+                  snap: { innerHTML: 1 },
+                  onUpdate: function () {
+                     let val = Math.floor(Number(this.targets()[0].innerHTML));
+                     if (isPerc) {
+                        el.innerHTML = val + "%";
+                     } else if (isFormat) {
+                        el.innerHTML = val + "/" + el.getAttribute('data-format-total');
+                     } else {
+                        el.innerHTML = String(val);
+                     }
+                  }
+               });
+            });
+
+            // Bars grow from zero
+            gsap.fromTo(".grow-bar",
+               { width: "0%" },
+               { width: (i, target) => target.getAttribute('data-width'), duration: 1.8, ease: 'power4.out', delay: 0.2 }
+            );
+
+            // Seductive Banner Entrance (Absolute Premium v3)
+            gsap.fromTo(".sed-visionary-banner",
+               { y: 30, opacity: 0, filter: 'blur(15px)' },
+               { y: 0, opacity: 1, filter: 'blur(0px)', duration: 1.4, ease: 'power4.out' }
+            );
+
+            gsap.fromTo(".v-quote-animate",
+               { x: -20, opacity: 0 },
+               { x: 0, opacity: 1, duration: 1.2, delay: 0.3, ease: 'power3.out' }
+            );
+
+            gsap.fromTo(".v-sub-animate",
+               { x: -15, opacity: 0 },
+               { x: 0, opacity: 1, duration: 1.2, delay: 0.5, ease: 'power3.out' }
+            );
+
+            // Kinetic Floating SVG Animation
+            gsap.to(".sed-floating-svg", {
+               y: "random(-20, 20)",
+               x: "random(-10, 10)",
+               rotation: "random(-5, 5)",
+               duration: 6,
+               repeat: -1,
+               yoyo: true,
+               ease: "sine.inOut"
+            });
+
+            gsap.to(".sed-floating-svg svg", {
+               scale: 1.1,
+               opacity: 0.35,
+               duration: 4,
+               repeat: -1,
+               yoyo: true,
+               ease: "power1.inOut"
+            });
+
+            // Kinetic Orbs
+            gsap.to(".orb-1", {
+               x: "random(-40, 40)",
+               y: "random(-40, 40)",
+               duration: 8,
+               repeat: -1,
+               yoyo: true,
+               ease: "sine.inOut"
+            });
+            gsap.to(".orb-2", {
+               x: "random(-30, 30)",
+               y: "random(-30, 30)",
+               duration: 10,
+               repeat: -1,
+               yoyo: true,
+               ease: "sine.inOut"
+            });
+
+            // Seductive Card Entrances
+            gsap.fromTo(".sed-card",
+               { y: 30, opacity: 0, scale: 0.98 },
+               { y: 0, opacity: 1, scale: 1, duration: 1, stagger: 0.1, ease: 'power3.out', delay: 0.2 }
+            );
+
+            // Pulse for active day
+            gsap.to(".sed-cal-day.active", {
+               scale: 1.05,
+               duration: 2,
+               repeat: -1,
+               yoyo: true,
+               ease: "sine.inOut"
+            });
+         });
+         return () => ctx.revert();
+      }
+   }, [isLoggedIn, currentView]);
+
+   if (isLoggedIn) {
+      return (
+         <div className={`portal-root ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+
+            {/* PERSISTENT SIDEBAR - Refined for Magnum Opus */}
+            <aside className="portal-sidebar arrive-sidebar">
+               <div className="ps-header" style={{ padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <img src="/smit-logo.png" alt="SMIT" style={{ height: '44px', width: 'auto', objectFit: 'contain' }} />
+                  <button
+                     className="ps-toggle"
+                     onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                     style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#64748B',
+                        cursor: 'pointer',
+                        padding: '8px',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                     }}>
+                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <line x1="9" y1="3" x2="9" y2="21" />
+                     </svg>
+                  </button>
+               </div>
+
+               <nav className="ps-nav">
+                  <div className="ps-nav-group">
+                     {[
+                        { id: 'Dashboard', label: 'Dashboard', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /></svg> },
+                        { id: 'Progress', label: 'Progress', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg> },
+                        { id: 'Attendance', label: 'Attendance', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg> },
+                        { id: 'Payment', label: 'Payment', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></svg> },
+                        { id: 'Assignment', label: 'Assignment', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg> },
+                        { id: 'Quiz', label: 'Quiz', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><rect x="8" y="2" width="8" height="4" rx="1" ry="1" /><path d="M9 14l2 2 4-4" /></svg> }
+                     ].map(item => (
+                        <button
+                           key={item.id}
+                           className={`ps-nav-item ${currentView === item.id ? 'active' : ''}`}
+                           onClick={() => setCurrentView(item.id)}
+                           title={item.label}
+                           style={{ gap: '14px' }}
+                        >
+                           <span className="psni-icon">{item.icon}</span>
+                           <span className="psni-label">{item.label}</span>
+                           {currentView === item.id && <div className="psni-active-bar" style={{ width: '4px', background: '#1D8ACF' }}></div>}
+                        </button>
+                     ))}
+                  </div>
+               </nav>
+
+               <div className="ps-footer-unified">
+                  <div className="ps-profile-trigger" onClick={() => setCurrentView('Profile')} title={isSidebarCollapsed ? "Open Profile" : ""}>
+                     <div className="ps-avatar-tiny">
+                        <img src="https://ui-avatars.com/api/?name=Aariz+Mehdi&background=1D8ACF&color=fff" alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                     </div>
+                     <span className="ps-name-caps">AARIZ MEHDI</span>
+                  </div>
+
+                  <button className="logout-icon-btn" onClick={handleLogout} title="Terminate Session">
+                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
+                  </button>
+               </div>
+            </aside>
+
+            {/* MAIN SHELL */}
+            <div className="portal-main">
+               <header className="portal-header">
+                  <div className="ph-left" style={{ display: 'flex', alignItems: 'center' }}>
+                     <div className="ph-breadcrumb">
+                        <div className="ph-breadcrumb-item">
+                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
+                           Home
+                        </div>
+                        <span className="ph-breadcrumb-sep">/</span>
+                        <div className="ph-breadcrumb-item active">
+                           Web and Mobile App Development
+                        </div>
+                     </div>
+                  </div>
+
+                  <div className="ph-right" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                     <button className="ph-feedback-btn-premium" onClick={() => setShowFeedback(true)}>
+                        Feedback
+                     </button>
+                     <div className="ph-notification" onClick={() => setShowNotifs(!showNotifs)} style={{ 
+                        background: 'rgba(255, 255, 255, 0.4)', 
+                        backdropFilter: 'blur(10px)',
+                        padding: '0', 
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px', 
+                        border: '1px solid rgba(15, 23, 42, 0.1)', 
+                        position: 'relative',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                        cursor: 'pointer'
+                     }}>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.8 }}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0" /></svg>
+                        <div className="ph-notif-dot" style={{ 
+                           position: 'absolute', 
+                           top: '10px', 
+                           right: '11px', 
+                           width: '8px', 
+                           height: '8px', 
+                           background: '#EF4444', 
+                           borderRadius: '50%',
+                           border: '2px solid #FFFFFF',
+                           boxShadow: '0 0 0 1.5px #FFFFFF, 0 0 10px rgba(239, 68, 68, 0.5)' 
+                        }}></div>
+
+                        {showNotifs && (
+                           <div className="notif-dropdown arrive-fade" onClick={(e) => e.stopPropagation()}>
+                              <div className="nd-header">Portal Logs</div>
+                              <div className="nd-list">
+                                 {notifications.length > 0 ? (
+                                    notifications.map((n, i) => (
+                                       <div key={i} className={`nd-item ${n.unread ? 'unread' : ''}`}>
+                                          <div className="nd-icon" style={{ background: 'rgba(29, 138, 207, 0.1)', color: '#1D8ACF' }}>ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ</div>
+                                          <div className="nd-content">
+                                             <strong>{n.title}</strong>
+                                             <p>{n.desc}</p>
+                                             <span>{n.time}</span>
+                                          </div>
+                                       </div>
+                                    ))
+                                 ) : (
+                                    <div className="nd-empty" style={{ padding: '32px 20px', textAlign: 'center', color: '#94A3B8' }}>
+                                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ margin: '0 auto 8px', opacity: 0.5 }}>
+                                          <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                                       </svg>
+                                       <p style={{ fontSize: '13px', margin: 0, fontWeight: 500 }}>No recent activity.</p>
+                                    </div>
+                                 )}
+                              </div>
+                           </div>
+                        )}
+                     </div>
+                  </div>
+               </header>
+
+               <main className="portal-content-scroll">
+                  <div className="portal-content-inner" key={currentView}>
+
+                     {/* === SEDUCTIVE DASHBOARD V2 (FULL PREMIUM) === */}
+                     {currentView === 'Dashboard' && (
+                        <div className="seductive-dashboard arrive-fade" style={{ display: "flex", gap: "32px", width: "100%", boxSizing: "border-box", maxWidth: "none", padding: "0 8px 40px" }}>
+
+                           {/* LEFT CONTENT AREA */}
+                           <div className="sed-main-content">
+
+                              {/* VISIONARY BANNER 3.0 (ULTRA PREMIUM SLIM) */}
+                              <div className="sed-visionary-banner sed-shine-wrapper">
+                                 <div className="sed-mesh"></div>
+                                 <div className="sed-orb orb-1" style={{ top: '-80px', left: '-80px', background: 'radial-gradient(circle, rgba(29, 138, 207, 0.25) 0%, transparent 70%)' }}></div>
+
+                                 {/* KINETIC FLOATING SVG */}
+                                 <div className="sed-floating-svg">
+                                    <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+                                       <path d="M100 20L120 60H80L100 20Z" fill="white" fillOpacity="0.4" />
+                                       <path d="M100 180L80 140H120L100 180Z" fill="white" fillOpacity="0.4" />
+                                       <circle cx="100" cy="100" r="40" stroke="white" strokeOpacity="0.3" strokeWidth="2" strokeDasharray="10 5" />
+                                       <path d="M40 100H160" stroke="white" strokeOpacity="0.2" strokeWidth="1" />
+                                       <path d="M100 40V160" stroke="white" strokeOpacity="0.2" strokeWidth="1" />
+                                       <rect x="70" y="70" width="60" height="60" rx="8" stroke="white" strokeOpacity="0.5" strokeWidth="1.5" />
+                                    </svg>
+                                 </div>
+
+                                 <div className="sed-content-wrap">
+                                    <h2 className="sed-visionary-quote v-quote-animate">
+                                       "Your potential is limited only by the depth of your ambition."
+                                    </h2>
+                                    <p className="sed-visionary-sub v-sub-animate">
+                                       Stay driven, Aariz. Your progress is building the foundation for a transformative career.
+                                    </p>
+                                 </div>
+                              </div>
+
+                              {/* METRICS ROW */}
+                              <div className="sed-metrics-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', width: '100%', marginBottom: '20px' }}>
+                                 {/* Attendance Card */}
+                                 <div className="sed-card sed-shine-wrapper sed-shine-item" style={{ padding: '16px 20px', cursor: 'pointer' }} onClick={() => setCurrentView('Attendance')}>
+                                    <div className="sed-stat-header" style={{ marginBottom: '14px' }}>
+                                       <span className="sed-stat-label">Attendance</span>
+                                       <div className="sed-stat-icon" style={{ background: 'rgba(16, 185, 129, 0.08)', color: '#10B981', width: '32px', height: '32px' }}>
+                                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                                       </div>
+                                    </div>
+                                    <div className="sed-stat-value" style={{ fontWeight: 450, fontSize: '34px' }}>
+                                       <span className="count-up" data-val="24" data-format="true" data-format-total="37">0</span>
+                                    </div>
+                                 </div>
+
+                                 {/* Assignment Card */}
+                                 <div className="sed-card sed-shine-wrapper sed-shine-item" style={{ padding: '16px 20px', cursor: 'pointer' }} onClick={() => setCurrentView('Assignment')}>
+                                    <div className="sed-stat-header" style={{ marginBottom: '14px' }}>
+                                       <span className="sed-stat-label">Assignment</span>
+                                       <div className="sed-stat-icon" style={{ background: 'rgba(139, 92, 246, 0.08)', color: '#8B5CF6', width: '32px', height: '32px' }}>
+                                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c3 3 9 3 12 0v-5" /></svg>
+                                       </div>
+                                    </div>
+                                    <div className="sed-stat-value" style={{ fontWeight: 450, fontSize: '34px' }}>
+                                       <span className="count-up" data-val="0" data-format="true" data-format-total="0">0</span>
+                                    </div>
+                                 </div>
+                              </div>
+
+                              {/* FULL-WIDTH FEE LEDGER (Tightened Gaps) */}
+                              <div className="sed-card sed-fee-card" style={{ padding: '16px 32px 24px', width: '100%', boxSizing: 'border-box' }}>
+                                 <div className="sed-stat-header" style={{ marginBottom: '12px' }}>
+                                    <span className="sed-stat-label">Fee Details</span>
+                                 </div>
+                                 <div className="sed-table-container">
+                                    <table className="sed-table" style={{ width: '100%' }}>
+                                       <thead>
+                                          <tr>
+                                             <th>Month</th>
+                                             <th>Amount</th>
+                                             <th>Due date</th>
+                                             <th>Voucher ID</th>
+                                             <th className="hide-mobile">1Bill/Inv</th>
+                                             <th>Status</th>
+                                          </tr>
+                                       </thead>
+                                       <tbody>
+                                          <tr>
+                                             <td style={{ fontWeight: 700, whiteSpace: "nowrap" }}>Apr 2026</td>
+                                             <td style={{ fontWeight: 800, color: "#1D8ACF", whiteSpace: "nowrap" }}>Rs: 1000 /-</td>
+                                             <td style={{ fontWeight: 450, whiteSpace: "nowrap" }}>08-Apr-2026</td>
+                                             <td style={{ fontWeight: 700, fontFamily: "monospace", fontSize: "12px", whiteSpace: "nowrap" }}><div style={{ display: "flex", alignItems: "center", gap: "8px" }}>202604433008<button className="sed-copy-btn" title="Copy ID" onClick={() => { navigator.clipboard.writeText("202604433008"); setShowCopyToast(true); setTimeout(() => setShowCopyToast(false), 2000); }} style={{ padding: 0, margin: 0, display: "flex", background: "none", border: "none", outline: "none", cursor: "pointer", color: "#64748B", transition: "color 0.2s" }}>
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ opacity: 0.8 }}><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                                             </button></div></td>
+                                             <td className="hide-mobile" style={{ fontWeight: 450, color: '#64748B' }}>N/A</td>
+                                             <td><span className="sed-status-badge sed-status-pending">PENDING</span></td>
+                                          </tr>
+                                       </tbody>
+                                    </table>
+                                 </div>
+                              </div>
+                           </div>
+
+                           {/* RIGHT PANEL AREA */}
+                           <aside className="sed-right-panel" style={{ width: "340px", flexShrink: 0 }}>
+                              {/* Schedule Card */}
+                              <div className="sed-card sed-schedule-card" style={{ padding: '14px 20px' }}>
+                                 <div className="sed-stat-header" style={{ marginBottom: '10px' }}>
+                                    <span className="sed-stat-label">Schedule</span>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1D8ACF" strokeWidth="3"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                                 </div>
+                                 <div className="sed-cal-grid" style={{ gap: '4px', marginBottom: '8px' }}>
+                                    {[
+                                       { d: 'S', n: '05' }, { d: 'M', n: '06' }, { d: 'T', n: '07' },
+                                       { d: 'W', n: '08', active: true }, { d: 'T', n: '09', active: true },
+                                       { d: 'F', n: '10' }, { d: 'S', n: '11' }
+                                    ].map((day, i) => (
+                                       <div key={i} className={`sed-cal-day ${day.active ? 'active' : ''}`} style={{ padding: '4px 0', fontSize: '10px' }}>
+                                          <span style={{ fontSize: '8px', opacity: 0.6, display: 'block', marginBottom: '2px' }}>{day.d}</span>
+                                          <span style={{ fontWeight: 800 }}>{day.n}</span>
+                                       </div>
+                                    ))}
+                                 </div>
+                                 <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(15, 23, 42, 0.05)', fontSize: '11px', color: '#64748B', fontWeight: 800, display: 'flex', alignItems: 'center', letterSpacing: '0.2px', textTransform: 'uppercase' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                       <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#1D8ACF' }}></div>
+                                       Wed/Thu 06-08 PM
+                                    </div>
+                                 </div>
+                              </div>
+
+                              {/* Interactive Tabs Card */}
+                              <div className="sed-card sed-tabs-card">
+                                 <div className="sed-tabs-nav">
+                                    {['Assignments', 'Quizzes', 'Events'].map(tab => (
+                                       <div
+                                          key={tab}
+                                          className={`sed-tab-item ${dashTab === tab ? 'active' : ''}`}
+                                          onClick={() => setDashTab(tab)}
+                                          style={{ cursor: 'pointer' }}
+                                       >
+                                          {tab}
+                                       </div>
+                                    ))}
+                                 </div>
+                                 <div className="sed-empty-state arrive-fade" key={dashTab}>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ margin: '0 auto 6px', display: 'block', opacity: 0.15 }}>
+                                       <circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" />
+                                    </svg>
+                                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>No pending {dashTab.toLowerCase().slice(0, -1)}s</div>
+                                 </div>
+                              </div>
+
+                              {/* ENROLLED COURSE (Sidebar Integrated) */}
+                              <div className="sed-card sed-sidebar-course sed-shine-wrapper sed-shine-item">
+                                 <h3 className="sed-sbc-title">Web and Mobile App Development</h3>
+                                 <div className="sed-sbc-badges">
+                                    <span className="sed-sbc-badge enrolled">Enrolled</span>
+                                    <span className="sed-sbc-badge code">WMAD</span>
+                                 </div>
+                                 <div className="sed-sbc-info-grid">
+                                    <div className="sed-sbc-item">
+                                       <span className="sed-sbc-label">Batch</span>
+                                       <span className="sed-sbc-val">Batch 04</span>
+                                    </div>
+                                    <div className="sed-sbc-item">
+                                       <span className="sed-sbc-label">Roll</span>
+                                       <span className="sed-sbc-val">433008</span>
+                                    </div>
+                                    <div className="sed-sbc-item">
+                                       <span className="sed-sbc-label">City</span>
+                                       <span className="sed-sbc-val">Peshawar</span>
+                                    </div>
+                                    <div className="sed-sbc-item">
+                                       <span className="sed-sbc-label">Schedule </span>
+                                       <span className="sed-sbc-val">W/T 06-08 PM</span>
+                                    </div>
+                                    <div className="sed-sbc-full-item" style={{ paddingTop: '10px', marginTop: '4px' }}>
+                                       <span className="sed-sbc-label" style={{ display: 'inline', marginRight: '6px' }}>Campus:</span>
+                                       <span className="sed-sbc-val" style={{ fontSize: '10px', display: 'inline' }}>Mohsin and Huma Campus</span>
+                                    </div>
+                                 </div>
+                              </div>
+                           </aside>
+
+                        </div>
+                     )}
+
+                     {/* === ATTENDANCE === */}
+                     {currentView === 'Attendance' && (
+                        <div className="arrive-fade">
+                           <div className="att-metrics" style={{ marginBottom: '24px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+                              <div className="nexus-card">
+                                 <div className="nx-head">
+                                    <div className="nx-icon" style={{ color: '#64748B', background: 'rgba(100, 116, 139, 0.1)' }}>
+                                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                                    </div>
+                                    <span className="nx-label">Total Classes</span>
+                                 </div>
+                                 <div className="nx-val-group">
+                                    <span className="nx-value"><span className="count-up" data-val="37">0</span></span>
+                                    <span className="nx-status neutral">Full Term</span>
+                                 </div>
+                              </div>
+
+                              <div className="nexus-card">
+                                 <div className="nx-head">
+                                    <div className="nx-icon" style={{ color: '#16A34A', background: 'rgba(22, 163, 74, 0.1)' }}>
+                                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+                                    </div>
+                                    <span className="nx-label">Present</span>
+                                 </div>
+                                 <div className="nx-val-group">
+                                    <span className="nx-value"><span className="count-up" data-val="24">0</span></span>
+                                    <span className="nx-status positive">Active</span>
+                                 </div>
+                              </div>
+
+                              <div className="nexus-card">
+                                 <div className="nx-head">
+                                    <div className="nx-icon" style={{ color: '#D97706', background: 'rgba(217, 119, 6, 0.1)' }}>
+                                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>
+                                    </div>
+                                    <span className="nx-label">Leave</span>
+                                 </div>
+                                 <div className="nx-val-group">
+                                    <span className="nx-value"><span className="count-up" data-val="0">0</span></span>
+                                    <span className="nx-status warning">Recorded</span>
+                                 </div>
+                              </div>
+
+                              <div className="nexus-card">
+                                 <div className="nx-head">
+                                    <div className="nx-icon" style={{ color: '#DC2626', background: 'rgba(220, 38, 38, 0.1)' }}>
+                                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>
+                                    </div>
+                                    <span className="nx-label">Absent</span>
+                                 </div>
+                                 <div className="nx-val-group">
+                                    <span className="nx-value"><span className="count-up" data-val="13">0</span></span>
+                                    <span className="nx-status neutral" style={{ color: '#DC2626', background: 'rgba(220, 38, 38, 0.05)' }}>Action Required</span>
+                                 </div>
+                              </div>
+                           </div>
+
+                           <div className="att-health-card" style={{ marginBottom: '24px' }}>
+                              <div className="ahc-head" style={{ marginBottom: '20px' }}>
+                                 <h3 className="ahc-title">Intelligence Overview</h3>
+                              </div>
+                              <div className="cc-prog-track ahc-track">
+                                 <div className="cc-prog-fill grow-bar" style={{ background: 'linear-gradient(90deg, #EF4444 0%, #D97706 100%)' }} data-width="64.8%"></div>
+                              </div>
+                              <div className="ahc-alert" style={{ fontSize: '13px', color: '#D97706', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
+                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                                 Attendance below 75% threshold. Secure portal access may be restricted.
+                              </div>
+                           </div>
+
+                           <div className="table-chassis">
+                              <div className="tc-header">
+                                 <h3 className="tc-title">Attendance Log</h3>
+                                 <select className="tc-select"><option>April 2026</option></select>
+                              </div>
+                              <table className="data-table">
+                                 <thead>
+                                    <tr><th>Sequence</th><th>Timestamp</th><th style={{ textAlign: 'right' }}>Verification</th></tr>
+                                 </thead>
+                                 <tbody>
+                                    <tr><td>1</td><td>Wednesday, April 1, 2026</td><td style={{ textAlign: 'right' }}><span className="badge-tag success">PRESENT</span></td></tr>
+                                    <tr><td>2</td><td>Thursday, April 2, 2026</td><td style={{ textAlign: 'right' }}><span className="badge-tag success">PRESENT</span></td></tr>
+                                 </tbody>
+                              </table>
+                           </div>
+                        </div>
+                     )}
+
+                     {/* === PAYMENT === */}
+                     {currentView === 'Payment' && (
+                        <div className="arrive-fade">
+                           <div className="finance-layout" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 340px', gap: '20px' }}>
+                              <div className="fin-guide">
+                                 <h3 className="fin-title" style={{ fontFamily: 'Inter', fontSize: '20px', fontWeight: 800, color: '#0F172A', marginBottom: '24px' }}>Remittance Gateway</h3>
+                                 <div className="fin-steps" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    {[
+                                       "Initiate JazzCash Protocol", "Navigate to 'More' Options", "Access Education Portal",
+                                       "Target 'Universities' Category", "Select 'Saylani Education' Entry",
+                                       "Inject Voucher ID: 202604433008", "Authorize Transaction"
+                                    ].map((s, i) => (
+                                       <div key={i} className="fin-step" style={{ background: '#FFFFFF', padding: '16px', borderRadius: '16px', border: '1px solid rgba(15, 23, 42, 0.04)', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                          <div className="fs-num" style={{ width: '28px', height: '28px', background: i === 5 ? '#1D8ACF' : '#F8FAFC', color: i === 5 ? 'white' : '#64748B', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 800 }}>{i + 1}</div>
+                                          <div className="fs-txt" style={{ fontSize: '13.5px', fontWeight: 600, color: i === 5 ? '#0F172A' : '#475569' }}>{s}</div>
+                                       </div>
+                                    ))}
+                                 </div>
+                              </div>
+                              <aside style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                 <div className="sa-card">
+                                    <h3 className="sa-title">Active Invoice</h3>
+                                    <div style={{ background: 'var(--brand-gradient)', padding: '24px', borderRadius: '16px', color: 'white', marginBottom: '16px' }}>
+                                       <div style={{ fontSize: '11px', fontWeight: 700, opacity: 0.8, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Outstanding Balance</div>
+                                       <div style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-1px' }}>PKR 1,000</div>
+                                    </div>
+                                    <button className="btn-primary-sculpted full" onClick={() => copyToClipboard("202604433008")}>
+                                       Copy Voucher ID
+                                    </button>
+                                 </div>
+                                 <div className="sa-card" style={{ padding: '20px', background: '#F8FAFC', border: '1px dashed rgba(15, 23, 42, 0.1)' }}>
+                                    <p style={{ fontSize: '12px', color: '#64748B', lineHeight: 1.6, margin: 0 }}>
+                                       Please complete the remittance within the specified grace period to maintain active portal credentials.
+                                    </p>
+                                 </div>
+                              </aside>
+                           </div>
+
+                           <div className="table-chassis" style={{ marginTop: '24px' }}>
+                              <div className="tc-header">
+                                 <h3 className="tc-title">Transaction Ledger</h3>
+                              </div>
+                              <table className="data-table">
+                                 <thead>
+                                    <tr><th>Period</th><th>Amount</th><th>Deadline</th><th>Hash</th><th>Status</th></tr>
+                                 </thead>
+                                 <tbody>
+                                    <tr>
+                                       <td style={{ fontWeight: 700 }}>April 2026</td>
+                                       <td style={{ color: '#0F172A', fontWeight: 700 }}>1,000</td>
+                                       <td>08-Apr-2026</td>
+                                       <td style={{ fontFamily: 'monospace', fontSize: '12px', color: '#64748B' }}>202604433008</td>
+                                       <td><span className="badge-tag warning">AWAITING</span></td>
+                                    </tr>
+                                 </tbody>
+                              </table>
+                           </div>
+                        </div>
+                     )}
+
+                     {/* === PROFILE === */}
+                     {currentView === 'Profile' && (
+                        <div className="arrive-fade profile-nexus">
+                           <div className="pn-cover" style={{ height: '160px', background: 'var(--brand-gradient)', borderRadius: '24px 24px 0 0', position: 'relative', overflow: 'hidden' }}>
+                              <div className="pn-cover-decoration" style={{ position: 'absolute', inset: 0, opacity: 0.2, background: 'radial-gradient(circle at 70% 30%, white 0%, transparent 70%)' }}></div>
+                           </div>
+
+                           <div className="pn-header" style={{ padding: '0 40px', marginTop: '-48px', position: 'relative', zIndex: 2, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '40px' }}>
+                              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '24px' }}>
+                                 <div className="pn-avatar-hero" style={{ width: '120px', height: '120px', border: '6px solid white', boxShadow: '0 12px 32px rgba(0,0,0,0.1)' }}>AM</div>
+                                 <div className="pn-header-meta" style={{ paddingBottom: '12px' }}>
+                                    <div className="pn-identity" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+                                       <h2 className="pn-name" style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', margin: 0 }}>Aariz Mehdi</h2>
+                                       <span className="badge-tag enrol" style={{ background: '#F8FAFC', padding: '4px 10px', borderRadius: '6px', fontSize: '10px', fontWeight: 800, color: '#64748B', border: '1px solid rgba(15,23,42,0.1)' }}>STUDENT_AUTHORITY</span>
+                                    </div>
+                                    <p style={{ margin: 0, fontSize: '14px', color: '#64748B', fontWeight: 600 }}>Enrollment: WMAD-B4-433008</p>
+                                 </div>
+                              </div>
+                              <div className="pn-actions" style={{ paddingBottom: '12px', display: 'flex', gap: '12px' }}>
+                                 <button className="ph-btn-secondary">Discard Changes</button>
+                                 <button className="btn-primary-sculpted">Synchronize Credentials</button>
+                              </div>
+                           </div>
+
+                           <div className="pn-form-grid" style={{ padding: '0 40px 48px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px' }}>
+                              <div className="pn-col" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                                 <h4 style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#94A3B8', margin: '0 0 -8px' }}>Identity Metrics</h4>
+                                 <div className="field-group">
+                                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Full Legal Name</label>
+                                    <input className="field-input" defaultValue="Aariz Mehdi" style={{ width: '100%', height: '48px', padding: '0 16px', borderRadius: '12px', border: '1px solid rgba(15,23,42,0.08)', background: '#F8FAFC', fontWeight: 600 }} />
+                                 </div>
+                                 <div className="field-group">
+                                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Primary Communication</label>
+                                    <input className="field-input disabled" disabled defaultValue="aarizm*****@gmail.com" style={{ width: '100%', height: '48px', padding: '0 16px', borderRadius: '12px', border: '1px solid rgba(15,23,42,0.04)', background: '#F1F5F9', color: '#94A3B8', cursor: 'not-allowed' }} />
+                                 </div>
+                                 <div className="field-group">
+                                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Professional Biography</label>
+                                    <textarea className="field-textarea" placeholder="Developer / Architect..." style={{ width: '100%', minHeight: '120px', padding: '16px', borderRadius: '12px', border: '1px solid rgba(15,23,42,0.08)', background: '#F8FAFC', fontWeight: 600, resize: 'none' }}></textarea>
+                                 </div>
+                              </div>
+                              <div className="pn-col" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                                 <h4 style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#94A3B8', margin: '0 0 -8px' }}>Secure Metadata</h4>
+                                 <div className="field-group">
+                                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Gender Orientation</label>
+                                    <select className="field-input" style={{ width: '100%', height: '48px', padding: '0 16px', borderRadius: '12px', border: '1px solid rgba(15,23,42,0.08)', background: '#F8FAFC', fontWeight: 600 }}><option>Male</option><option>Female</option></select>
+                                 </div>
+                                 <div className="field-group">
+                                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Date of Origin</label>
+                                    <input type="date" className="field-input" defaultValue="2009-09-05" style={{ width: '100%', height: '48px', padding: '0 16px', borderRadius: '12px', border: '1px solid rgba(15,23,42,0.08)', background: '#F8FAFC', fontWeight: 600 }} />
+                                 </div>
+                                 <div className="field-group">
+                                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>National Registry Key (CNIC)</label>
+                                    <div className="field-input-wrapper" style={{ position: 'relative' }}>
+                                       <input className="field-input disabled" disabled defaultValue="1730157164037" style={{ width: '100%', height: '48px', padding: '0 16px', borderRadius: '12px', border: '1px solid rgba(15,23,42,0.04)', background: '#F1F5F9', color: '#94A3B8', cursor: 'not-allowed' }} />
+                                       <span className="fi-icon" style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }}>ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ</span>
+                                    </div>
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+                     )}
+
+
+                     {/* === ASSIGNMENTS === */}
+                     {currentView === 'Assignment' && (
+                        <div className="arrive-fade">
+                           <div className="att-metrics" style={{ marginBottom: '24px' }}>
+                              <div className="att-metric-box">
+                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div>
+                                       <div className="amb-val"><span className="count-up" data-val="0">0</span></div>
+                                       <div className="amb-lbl">Total</div>
+                                    </div>
+                                    <div className="nx-icon" style={{ color: '#1D8ACF', background: 'rgba(29, 138, 207, 0.1)', flexShrink: 0 }}>
+                                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
+                                    </div>
+                                 </div>
+                              </div>
+                              <div className="att-metric-box warning">
+                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div>
+                                       <div className="amb-val"><span className="count-up" data-val="0">0</span></div>
+                                       <div className="amb-lbl">Submitted</div>
+                                    </div>
+                                    <div className="nx-icon" style={{ color: '#D97706', background: 'rgba(217, 119, 6, 0.1)', flexShrink: 0 }}>
+                                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                                    </div>
+                                 </div>
+                              </div>
+                              <div className="att-metric-box positive">
+                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div>
+                                       <div className="amb-val"><span className="count-up" data-val="0">0</span></div>
+                                       <div className="amb-lbl">Approved</div>
+                                    </div>
+                                    <div className="nx-icon" style={{ color: '#16A34A', background: 'rgba(22, 163, 74, 0.1)', flexShrink: 0 }}>
+                                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+                                    </div>
+                                 </div>
+                              </div>
+                              <div className="att-metric-box negative">
+                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div>
+                                       <div className="amb-val"><span className="count-up" data-val="0">0</span></div>
+                                       <div className="amb-lbl">Not Approved</div>
+                                    </div>
+                                    <div className="nx-icon" style={{ color: '#DC2626', background: 'rgba(220, 38, 38, 0.1)', flexShrink: 0 }}>
+                                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>
+                                    </div>
+                                 </div>
+                              </div>
+                           </div>
+
+                           <div className="table-chassis">
+                              <table className="data-table">
+                                 <thead>
+                                    <tr>
+                                       <th>Assignment</th>
+                                       <th>Course</th>
+                                       <th>Due Date</th>
+                                       <th>Status</th>
+                                       <th style={{ textAlign: 'right' }}>Action</th>
+                                    </tr>
+                                 </thead>
+                                 <tbody>
+                                    {pendingAssignments.length > 0 ? (
+                                       pendingAssignments.map((a: any, i: number) => (
+                                          <tr key={i}>
+                                             <td>{a.title}</td>
+                                             <td>{a.course}</td>
+                                             <td>{a.date}</td>
+                                             <td><span className={`badge-tag ${a.statusClass}`}>{a.status}</span></td>
+                                             <td style={{ textAlign: 'right' }}><button className="ph-btn-secondary">View Space</button></td>
+                                          </tr>
+                                       ))
+                                    ) : (
+                                       <tr>
+                                          <td colSpan={5} style={{ textAlign: 'center', padding: '60px 20px', borderBottom: 'none' }}>
+                                             <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)' }}>
+                                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
+                                             </div>
+                                             <h3 style={{ fontFamily: 'Inter', fontSize: '18px', fontWeight: 800, color: '#0F172A', marginBottom: '8px', letterSpacing: '-0.02em' }}>No Assignments</h3>
+                                             <p style={{ fontSize: '14px', color: '#64748B', margin: 0 }}>You haven't been given any assignments yet.</p>
+                                          </td>
+                                       </tr>
+                                    )}
+                                 </tbody>
+                              </table>
+                           </div>
+                        </div>
+                     )}
+
+
+                     {/* === QUIZZES === */}
+                     {currentView === 'Quiz' && (
+                        <div className="arrive-fade">
+                           <div className="info-banner" style={{ marginBottom: '24px', padding: '24px', background: 'linear-gradient(135deg, #1D8ACF 0%, #1565C0 100%)', borderRadius: '20px', color: 'white', position: 'relative', overflow: 'hidden', boxShadow: '0 12px 32px rgba(29, 138, 207, 0.2)' }}>
+                              <div style={{ position: 'absolute', top: '-20px', right: '-20px', opacity: 0.1 }}>
+                                 <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /></svg>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', position: 'relative', zIndex: 1 }}>
+                                 <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+                                 </div>
+                                 <h3 style={{ fontFamily: 'Inter', fontSize: '18px', fontWeight: 800, color: 'white', letterSpacing: '-0.02em', margin: 0 }}>Critical Assessment Protocols</h3>
+                              </div>
+                              <ul style={{ margin: 0, paddingLeft: '0', listStyle: 'none', color: 'rgba(255,255,255,0.9)', fontSize: '13.5px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', position: 'relative', zIndex: 1, fontWeight: 600 }}>
+                                 <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><span style={{ opacity: 0.6 }}>â– </span> Quizzes require single-session completion</li>
+                                 <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><span style={{ opacity: 0.6 }}>â– </span> Tab switching triggers telemetry alerts</li>
+                                 <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><span style={{ opacity: 0.6 }}>â– </span> Fiber-stable connection recommended</li>
+                                 <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><span style={{ opacity: 0.6 }}>â– </span> Fullscreen environment mandated</li>
+                              </ul>
+                           </div>
+
+                           <div className="table-chassis" style={{ marginBottom: '16px' }}>
+                              <div className="tc-header">
+                                 <h3 className="tc-title">Academic Assessments</h3>
+                                 <div style={{ display: 'flex', gap: '8px' }}>
+                                    <span className="badge-tag" style={{ background: '#F8FAFC', color: '#64748B', border: '1px solid rgba(15,23,42,0.1)' }}>Filter: ACTIVE</span>
+                                 </div>
+                              </div>
+                              <table className="data-table">
+                                 <thead>
+                                    <tr>
+                                       <th>Classification</th>
+                                       <th>Title</th>
+                                       <th>Metrics</th>
+                                       <th>Score</th>
+                                       <th>Status</th>
+                                       <th style={{ textAlign: 'right' }}>Action</th>
+                                    </tr>
+                                 </thead>
+                                 <tbody>
+                                    {pendingQuizzes.length > 0 ? (
+                                       pendingQuizzes.map((q: any, i: number) => (
+                                          <tr key={i}>
+                                             <td style={{ fontWeight: 700, color: '#1D8ACF' }}>{q.module}</td>
+                                             <td style={{ fontWeight: 800, color: '#0F172A' }}>{q.title}</td>
+                                             <td style={{ fontSize: '12px', color: '#64748B', fontWeight: 600 }}>{q.questions} Questions</td>
+                                             <td style={{ fontFamily: 'monospace', fontWeight: 700 }}>{q.score || '---'}</td>
+                                             <td><span className={`badge-tag ${q.statusClass}`}>{q.status}</span></td>
+                                             <td style={{ textAlign: 'right' }}><button className="btn-primary-sculpted" style={{ padding: '8px 16px', fontSize: '12px' }}>Launch Session</button></td>
+                                          </tr>
+                                       ))
+                                    ) : (
+                                       <tr>
+                                          <td colSpan={6} style={{ textAlign: 'center', padding: '80px 20px', borderBottom: 'none' }}>
+                                             <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+                                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+                                             </div>
+                                             <h3 style={{ fontFamily: 'Inter', fontSize: '20px', fontWeight: 800, color: '#0F172A', marginBottom: '8px', letterSpacing: '-0.02em' }}>Grid Signal Clear</h3>
+                                             <p style={{ fontSize: '14px', color: '#64748B', margin: 0, fontWeight: 500 }}>No active assessment protocols detected for this cycle.</p>
+                                          </td>
+                                       </tr>
+                                    )}
+                                 </tbody>
+                              </table>
+                           </div>
+                           <p style={{ textAlign: 'center', color: '#94A3B8', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginTop: '32px' }}>Contact SMIT Support for protocol discrepancies.</p>
+                        </div>
+                     )}
+
+
+                     {/* === PROGRESS === */}
+                     {currentView === 'Progress' && (
+                        <div className="arrive-fade proto-nexus">
+                           
+                           {/* KEY STATS RAIL */}
+                           <div className="proto-rail-bar">
+                              <div className="proto-rail-item">
+                                 <div className="proto-rail-v" style={{ background: '#10B981' }}></div>
+                                 <div>
+                                    <span className="proto-label">Total Topics</span>
+                                    <div className="proto-value-main"><span className="count-up" data-val="124">0</span></div>
+                                 </div>
+                              </div>
+                              <div className="proto-rail-item">
+                                 <div className="proto-rail-v" style={{ background: '#8B5CF6' }}></div>
+                                 <div>
+                                    <span className="proto-label">Total Completed</span>
+                                    <div className="proto-value-main"><span className="count-up" data-val="82">0</span></div>
+                                 </div>
+                              </div>
+                              <div className="proto-rail-item">
+                                 <div className="proto-rail-v" style={{ background: '#F43F5E' }}></div>
+                                 <div>
+                                    <span className="proto-label">Not Completed</span>
+                                    <div className="proto-value-main"><span className="count-up" data-val="42">0</span></div>
+                                 </div>
+                              </div>
+                           </div>
+
+                           {/* MAIN VERTICAL LAYOUT */}
+                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '16px' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                 
+                                 {/* OVERALL PROGRESS */}
+                                 <div className="proto-card">
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                                       <div>
+                                          <span className="proto-label">Overall Progress</span>
+                                          <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.5px' }}>Completion Target: June 2026</h3>
+                                       </div>
+                                       <div className="proto-value-main" style={{ color: '#1D8ACF' }}>
+                                          <span className="count-up" data-val="66" data-perc="true">0%</span>
+                                       </div>
+                                    </div>
+                                    <div style={{ height: '8px', background: '#F1F5F9', borderRadius: '100px', overflow: 'hidden' }}>
+                                       <div className="sed-prog-fill grow-bar" style={{ width: '0%', background: 'linear-gradient(90deg, #1D8ACF, #6DB33F)', height: '100%' }} data-width="66%"></div>
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginTop: '20px' }}>
+                                       {[
+                                          { label: 'Speed', val: 'Fast', color: '#10B981' },
+                                          { label: 'Consistency', val: 'High', color: '#8B5CF6' },
+                                          { label: 'Assessments', val: 'A+', color: '#F59E0B' },
+                                          { label: 'Ranking', val: '#4', color: '#1D8ACF' }
+                                       ].map((m, i) => (
+                                          <div key={i}>
+                                             <span className="proto-label" style={{ marginBottom: '2px' }}>{m.label}</span>
+                                             <div style={{ fontSize: '13px', fontWeight: 800, color: m.color }}>{m.val}</div>
+                                          </div>
+                                       ))}
+                                    </div>
+                                 </div>
+
+                                 {/* CURRICULUM BREAKDOWN */}
+                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '8px' }}>
+                                    <span className="proto-label" style={{ margin: 0 }}>Curriculum Breakdown</span>
+                                    <div style={{ flex: 1, height: '1px', background: '#E2E8F0' }}></div>
+                                 </div>
+
+                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                    {[
+                                       { title: 'HTML5 Semantic Mastery', prog: 100, topics: '18/18', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> },
+                                       { title: 'CSS3 & Modern Layouts', prog: 90, topics: '24/27', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg> },
+                                       { title: 'JavaScript Fundamentals', prog: 65, topics: '32/49', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> },
+                                       { title: 'React Ecosystem', prog: 20, topics: '6/30', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="2"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg> }
+                                    ].length > 0 ? (
+                                       [
+                                          { title: 'HTML5 Semantic Mastery', prog: 100, topics: '18/18', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> },
+                                          { title: 'CSS3 & Modern Layouts', prog: 90, topics: '24/27', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg> },
+                                          { title: 'JavaScript Fundamentals', prog: 65, topics: '32/49', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> },
+                                          { title: 'React Ecosystem', prog: 20, topics: '6/30', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1.5"/><path d="M2 12c0-3.5 10-8 10-8s10 4.5 10 8-10 8-10 8-10-4.5-10-8z"/><path d="M7 19c0-3.5 10-8 10-8s10 4.5 10 8-10 8-10 8-10-4.5-10-8z" transform="rotate(60 12 12)"/><path d="M12 25c0-3.5 10-8 10-8s10 4.5 10 8-10 8-10 8-10-4.5-10-8z" transform="rotate(120 12 12)"/></svg> }
+                                       ].map((m, i) => (
+                                          <div key={i} className="proto-card sed-shine-wrapper sed-shine-item" style={{ padding: '16px' }}>
+                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                <div style={{ color: '#1D8ACF', opacity: 0.8 }}>{m.icon}</div>
+                                                <span className="proto-label" style={{ margin: 0 }}>{m.topics} Topics</span>
+                                             </div>
+                                             <h4 style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A', marginBottom: '8px' }}>{m.title}</h4>
+                                             <div style={{ height: '4px', background: '#F1F5F9', borderRadius: '100px', overflow: 'hidden' }}>
+                                                <div className="sed-prog-fill grow-bar" style={{ width: '0%', background: m.prog === 100 ? '#10B981' : '#1D8ACF', height: '100%' }} data-width={`${m.prog}%`}></div>
+                                             </div>
+                                          </div>
+                                       ))
+                                    ) : (
+                                       <div className="proto-empty-nexus" style={{ gridColumn: 'span 2' }}>
+                                          <div className="proto-empty-icon">
+                                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" /></svg>
+                                          </div>
+                                          <span className="proto-label" style={{ margin: 0 }}>Awaiting Updates</span>
+                                          <p style={{ fontSize: '12px', margin: 0, opacity: 0.6 }}>No topics available at this time.</p>
+                                       </div>
+                                    )}
+                                 </div>
+                              </div>
+
+                              <aside style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                 {/* PERFORMANCE PEAK (REFINED MASTERY INDEX) */}
+                                 <div className="proto-card momentum-card" style={{ padding: '16px 20px' }}>
+                                    {/* DASHBOARD-STYLE BLUEPRINT WATERMARK */}
+                                    <div className="sed-floating-svg" style={{ opacity: 0.06, right: '-15%', top: '5%', width: '160px', height: '160px' }}>
+                                       <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                          <circle cx="100" cy="100" r="40" stroke="white" strokeOpacity="0.3" strokeWidth="2" strokeDasharray="10 5" />
+                                          <path d="M40 100H160" stroke="white" strokeOpacity="0.2" strokeWidth="1" />
+                                          <path d="M100 40V160" stroke="white" strokeOpacity="0.2" strokeWidth="1" />
+                                          <rect x="70" y="70" width="60" height="60" rx="8" stroke="white" strokeOpacity="0.5" strokeWidth="1.5" />
+                                       </svg>
+                                    </div>
+
+                                    <div style={{ position: 'relative', zIndex: 10, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                          <div>
+                                             <span className="proto-label" style={{ color: 'rgba(255,255,255,0.4)', letterSpacing: '2px', fontSize: '7.5px', marginBottom: '2px' }}>ACADEMIC TRACK</span>
+                                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(56, 189, 248, 0.08)', padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(56, 189, 248, 0.15)', marginTop: '4px' }}>
+                                                <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#38BDF8' }}></div>
+                                                <span style={{ fontSize: '8.5px', fontWeight: 800, color: '#38BDF8', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Top 25% of Cohort</span>
+                                             </div>
+                                          </div>
+                                          
+                                          <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '8px' }}>
+                                             <div style={{ fontSize: '8px', color: 'rgba(255,255,255,0.2)', fontWeight: 800, letterSpacing: '1.2px', textTransform: 'uppercase', fontFamily: '"JetBrains Mono", monospace' }}>
+                                                Trajectory: Peak Performance
+                                             </div>
+                                          </div>
+                                       </div>
+
+                                       <div className="peak-val-nexus" style={{ fontSize: '42px', marginBottom: 0 }}>65%</div>
+                                    </div>
+                                 </div>
+
+                                 {/* UPCOMING TOPICS */}
+                                 <div className="proto-card">
+                                    <span className="proto-label">Upcoming Topics</span>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
+                                       {[
+                                          { t: 'ES6+ Advanced Patterns', d: 'Next Class' },
+                                          { t: 'Async/Await Deep Dive', d: 'Next Week' },
+                                          { t: 'TypeScript Integration', d: 'April 15' }
+                                       ].map((item, i) => (
+                                          <div key={i} style={{ padding: '10px 14px', borderRadius: '12px', background: '#F8FAFC', border: '1px solid rgba(15,23,42,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                             <div>
+                                                <div style={{ fontSize: '11px', fontWeight: 800, color: '#334155' }}>{item.t}</div>
+                                                <div style={{ fontSize: '9px', color: '#94A3B8', fontWeight: 600 }}>{item.d}</div>
+                                             </div>
+                                             <div style={{ color: '#1D8ACF', opacity: 0.4 }}>
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                                             </div>
+                                          </div>
+                                       ))}
+                                    </div>
+                                 </div>
+                              </aside>
+                           </div>
+                        </div>
+                     )}
+                  </div>
+                  <div className={`sed-toast ${showCopyToast ? "show" : ""}`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="3" style={{ flexShrink: 0 }}><polyline points="20 6 9 17 4 12" /></svg><span>Voucher ID Copied!</span></div>
+               </main>
+            </div>
+
+            {/* FEEDBACK OVERLAY */}
+            {showFeedback && (
+               <div className="feedback-overlay arrive-fade">
+                  <div className="fo-card">
+                     <button className="fo-close" onClick={() => setShowFeedback(false)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button>
+                     <div className="fo-body">
+                        <h3 className="fo-head">Feedback Interface ðŸ’Œ</h3>
+                        <p className="fo-sub">Transmit your diagnostics directly to engineering.</p>
+
+                        <div className="fo-types">
+                           {['Bug ðŸž', 'Idea ðŸ’¡', 'Other âœ¨'].map(t => (
